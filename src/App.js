@@ -22,6 +22,7 @@ import {
   DrawerHeader,
   DrawerBody,
   Input,
+  Progress,
   DrawerFooter,
   useDisclosure,
   IconButton,
@@ -51,57 +52,18 @@ function App() {
     })
   };
 
-  function nameFormatter(cell, row, rowIndex) {
 
-    console.log(row)
-    console.log("Call")
-    console.log(rowIndex)
-
-    return (
-      <p>{` ${row.name}`} <DrawerExample uuid={row.uuid}/></p>
-    );
-  }
-
-
-  function itemFormatter(cell, row, rowIndex) {
-    console.log(row)
-    return (
-      <Flex h='40px'>
-        <Center axis='vertical'><Text as='b'>{row.name}</Text></Center>
-      </Flex>
-    );
-  }
-
-  function tagFormatter(cell, row, rowIndex) {
-    console.log(row)
-    return (
-      <Flex h='40px'>
-      <Center axis='vertical'><Tag>{cell}</Tag></Center>
-      </Flex>
-    );
-  }
-
-  function audioPlayerFormatter(cell, row, rowIndex) {
-    return (
-      <HStack>
-        <DrawerExample uuid={row.uuid}/>
-        <SimpleAudioPlayer src={"http://127.0.0.1:5000/previews/" + cell} />
-{/*         <ReactAudioPlayer 
-          w='30px' h='20px'
-        src={"http://127.0.0.1:5000/previews/" + cell} 
-        controlsList='nodownload nomute novolume noplaybackrate' controls
-        /> */}
-        </HStack>
-    );
-  }
-
-  const selectOptions = {
+ const selectOptions = {
     'Native Instruments': 'Native Instruments',
     'Waves': 'Waves',
     'Arturia': 'Arturia'
   };
+  
+  
+ 
   const columns = [{dataField:"name",text:"Preset", formatter:itemFormatter, sort:true, filter: textFilter()},
-  {text:"Category", },
+  {text:"Mode", formatter:modeFormatter },
+  {text:"Category", formatter:categoryFormatter },
   {dataField:"bank1", text:"Product", formatter:tagFormatter, sort:true },
   {dataField:"vendor", sort:true, formatter:tagFormatter, 
   filter: multiSelectFilter({
@@ -149,18 +111,36 @@ function DrawerExample(props) {
     })
   };
 
+   const selectOptions = {
+    'Native Instruments': 'Native Instruments',
+    'Waves': 'Waves',
+    'Arturia': 'Arturia'
+  };
+  
+
+   const columns = [{dataField:"name",text:"Preset", formatter:itemFormatter,},
+   {text:"", formatter:matchFormatter , },
+  {text:"Mode", formatter:modeFormatter , width:'300px'},
+  {text:"Category", formatter:categoryFormatter },
+  {dataField:"bank1", text:"Product", formatter:tagFormatter, },
+  {dataField:"vendor", text:"Vendor", formatter:tagFormatter, },
+  {dataField:"preview", formatter:audioPlayerFormatter} ] 
+
   if (!data_sim) return "loading";
 
   return (
     <>
       <IconButton icon={<FiSearch />} variant="text" ref={btnRef} onClick={onOpen}/>
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose} finalFocusRef={btnRef} size="xl">
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose} finalFocusRef={btnRef} size="full">
         <DrawerOverlay>
           <DrawerContent>
             <DrawerCloseButton />
             <DrawerHeader>Similar Sounds</DrawerHeader>
             <DrawerBody>
-            <RecommendedPresets ids={data_sim}/>
+                 <BootstrapTable keyField='uuid' data={data_sim} 
+                    columns={columns}
+                    bordered={ false }
+                    />
             </DrawerBody>
           </DrawerContent>
         </DrawerOverlay>
@@ -171,14 +151,21 @@ function DrawerExample(props) {
 
 const RecommendedPresets = (props) => (
 
-  props.ids.map( function (x) 
+  props.ids.map( function (row) 
   { 
+    console.log(row)
+
     return <HStack>
-      <Box>{x.name}({(100 - x.score * 100).toFixed(2)}%)</Box>
+      {/* <Box>{x.name}({(100 - x.score * 100).toFixed(2)}%)</Box>*/}
+      <Flex h='40px'>
+        <Center axis='vertical'><Text as='b'>{row.name}</Text>
+         <Tag size='sm'>{row.category}</Tag><Tag size='sm'>{row.subcategory}</Tag>
+        </Center>
+      </Flex>
       <Spacer />
-      <ReactAudioPlayer 
+      <SimpleAudioPlayer 
       w='100px'
-      src={"http://127.0.0.1:5000/previews/" + x.preview} 
+      src={"http://127.0.0.1:5000/previews/" + row.preview} 
       controlsList='nodownload nomute novolume noplaybackrate'
       controls/>
     </HStack>
@@ -225,5 +212,78 @@ class SimpleAudioPlayer extends Component {
   }
 }
 
+function tagFormatter(cell, row, rowIndex) {
+    console.log(row)
+    return (
+      <Flex h='40px'>
+      <Center axis='vertical'><Tag size='sm'>{cell}</Tag></Center>
+      </Flex>
+    );
+  }
+
+   function modeFormatter(cell, row, rowIndex) {
+    
+    const modes = row.mode.split(",");
+
+    return (
+      <Flex h='40px'>
+      <Center axis='vertical'>
+        {modes.map( function (x) {
+            return <Tag size='sm'>{x}</Tag>})
+        }
+        </Center>
+      </Flex>
+    );
+  }
+
+   function categoryFormatter(cell, row, rowIndex) {
+    console.log(row)
+    return (
+      <Flex h='40px'>
+      <Center axis='vertical'><Tag size='sm'>{row.category}</Tag><Tag size='sm'>{row.subcategory}</Tag></Center>
+      </Flex>
+    );
+  }
+
+  function audioPlayerFormatter(cell, row, rowIndex) {
+    return (
+      <HStack>
+        <DrawerExample uuid={row.uuid}/>
+        <SimpleAudioPlayer src={"http://127.0.0.1:5000/previews/" + cell} />
+{/*         <ReactAudioPlayer 
+          w='30px' h='20px'
+        src={"http://127.0.0.1:5000/previews/" + cell} 
+        controlsList='nodownload nomute novolume noplaybackrate' controls
+        /> */}
+        </HStack>
+    );
+  }
+  function nameFormatter(cell, row, rowIndex) {
+
+    console.log(row)
+    console.log("Call")
+    console.log(rowIndex)
+
+    return (
+      <p>{` ${row.name}`} <DrawerExample uuid={row.uuid}/></p>
+    );
+  }
+
+
+  function itemFormatter(cell, row, rowIndex) {
+    return (
+      <Flex h='40px'>
+        <Center axis='vertical'><Text as='b'>{row.name}</Text></Center>
+      </Flex>
+    );
+  }
+
+  function matchFormatter(cell, row, rowIndex) {
+    return (
+      <Flex h='40px'>
+        <Center axis='vertical'><Progress colorScheme='green' width='30px' size='sm' value={(1-row.score)*100} /></Center>
+      </Flex>
+    );
+  }
 
 export default App;
