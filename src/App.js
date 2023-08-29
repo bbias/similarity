@@ -22,7 +22,8 @@ import {
   DrawerHeader,
   DrawerBody,
   Input,
-  Progress,
+  CircularProgress,
+  CircularProgressLabel,
   DrawerFooter,
   useDisclosure,
   IconButton,
@@ -38,6 +39,7 @@ import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
 import filterFactory, {textFilter, multiSelectFilter} from 'react-bootstrap-table2-filter';
 import ReactAudioPlayer from 'react-audio-player';
+
 
 
 function App() {
@@ -60,7 +62,7 @@ function App() {
   };
   
   
- 
+  
   const columns = [{dataField:"name",text:"Preset", formatter:itemFormatter, sort:true, filter: textFilter()},
   {text:"Mode", formatter:modeFormatter },
   {text:"Category", formatter:categoryFormatter },
@@ -118,8 +120,10 @@ function DrawerExample(props) {
   };
   
 
-   const columns = [{dataField:"name",text:"Preset", formatter:itemFormatter,},
-   {text:"", formatter:matchFormatter , },
+   const columns = [
+    {text:"", formatter:matchFormatter , width:'40px'},
+    {dataField:"name",text:"Preset", formatter:itemFormatter,},
+ 
   {text:"Mode", formatter:modeFormatter , width:'300px'},
   {text:"Category", formatter:categoryFormatter },
   {dataField:"bank1", text:"Product", formatter:tagFormatter, },
@@ -226,10 +230,13 @@ function tagFormatter(cell, row, rowIndex) {
     const modes = row.mode.split(",");
 
     return (
-      <Flex h='40px'>
+      <Flex h='40px' >
       <Center axis='vertical'>
-        {modes.map( function (x) {
-            return <Tag size='sm'>{x}</Tag>})
+        {modes.map( function (x) 
+        {
+          if (x) {return <Tag m='2px' size='sm'>{x}</Tag>} 
+          return ""
+        })
         }
         </Center>
       </Flex>
@@ -240,7 +247,7 @@ function tagFormatter(cell, row, rowIndex) {
     console.log(row)
     return (
       <Flex h='40px'>
-      <Center axis='vertical'><Tag size='sm'>{row.category}</Tag><Tag size='sm'>{row.subcategory}</Tag></Center>
+      <Center axis='vertical'><Tag m='2px' size='sm'>{row.category}</Tag><Tag m='2px' size='sm'>{row.subcategory}</Tag></Center>
       </Flex>
     );
   }
@@ -279,9 +286,15 @@ function tagFormatter(cell, row, rowIndex) {
   }
 
   function matchFormatter(cell, row, rowIndex) {
+
+    const score = (1-row.score)*100;
+
     return (
       <Flex h='40px'>
-        <Center axis='vertical'><Progress colorScheme='green' width='30px' size='sm' value={(1-row.score)*100} /></Center>
+        <Center axis='vertical'>
+          <CircularProgress colorScheme='green' size='35px' value={score}>
+          <CircularProgressLabel>{score.toFixed(1)}</CircularProgressLabel></CircularProgress>
+          </Center>
       </Flex>
     );
   }
