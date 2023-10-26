@@ -4,17 +4,10 @@ import {
   Box,
   Tag,
   Text,
-  Link,
+
   Image,
-  Divider,
   HStack,
-  VStack,
-  Code,
-  Grid,
-  theme,
-  Heading,
   Center,
-  Button,
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
@@ -22,61 +15,58 @@ import {
   DrawerHeader,
   DrawerBody,
   Input,
+  InputGroup,
+  InputRightElement,
   CircularProgress,
   CircularProgressLabel,
-  DrawerFooter,
+ 
   useDisclosure,
   IconButton,
   Flex, 
-  Spacer
+  VStack
 } from '@chakra-ui/react';
-import React, { Component }  from 'react';
-import { FiPlay, FiSearch, FiPause, FiMoreHorizontal } from "react-icons/fi"
+import React, { Component, useCallback }  from 'react';
+import { FiPlay, FiSearch, FiPause } from "react-icons/fi"
+import 'react-dropzone-uploader/dist/styles.css'
 
 import axios from 'axios';
 import {useEffect, useState} from 'react';
 import BootstrapTable from 'react-bootstrap-table-next';
 import paginationFactory from 'react-bootstrap-table2-paginator';
-import filterFactory, {textFilter, multiSelectFilter} from 'react-bootstrap-table2-filter';
-import ReactAudioPlayer from 'react-audio-player';
-
-
+import filterFactory, {textFilter} from 'react-bootstrap-table2-filter';
+import 'react-bootstrap-table2-toolkit/dist/react-bootstrap-table2-toolkit.min.css';
+import {useDropzone} from 'react-dropzone'
 
 function App() {
-  const [data,setData]=useState([])
-  useEffect(()=>{
-    getData() 
-  },[]);
-  const getData=()=>{
-    axios('http://127.0.0.1:5000/sound_info').then(res=>{
-      console.log(res.data)
-      setData(res.data)
-    })
-  };
 
-
- const selectOptions = {
-    'Native Instruments': 'Native Instruments',
-    'Waves': 'Waves',
-    'Arturia': 'Arturia'
-  };
-  
-  
-  
   const columns = [{dataField:"name",text:"Preset", formatter:itemFormatter, sort:true, filter: textFilter()},
   {text:"Mode", formatter:modeFormatter },
   {text:"Category", formatter:categoryFormatter },
-  {dataField:"bank1", text:"Product", formatter:tagFormatter, sort:true },
-  {dataField:"vendor", sort:true, formatter:tagFormatter, 
-  filter: multiSelectFilter({
-    options: selectOptions
-  }) },
+  {dataField:"product", text:"Product", formatter:productFormatter, sort:true, filter: textFilter() },
+  {dataField:"vendor", text:"Vendor", formatter:tagFormatter, sort:true, filter: textFilter() },
   {dataField:"preview", formatter:audioPlayerFormatter} ] 
+
+  const [data,setData]=useState([])
+  useEffect(()=>{
+    axios('http://127.0.0.1:5000/sound_info').then(res=>{
+      console.log("App::useEfect")
+      setData(res.data)
+    })
+  },[]);
 
   return (
     <ChakraProvider>
-      <Center><Image width="100%"  src='https://www.native-instruments.com/typo3temp/pics/img-welcome-hero-komplete-14-collectors-edition-product-page-01-welcome-1-a86a09c8259bac123c375a639a08af76-d@2x.jpg' alt='Dan Abramov' /></Center>
       <Center>
+      <VStack>
+      <Image width="100%"  src='https://www.native-instruments.com/typo3temp/pics/img-welcome-hero-komplete-14-collectors-edition-product-page-01-welcome-1-a86a09c8259bac123c375a639a08af76-d@2x.jpg' alt='Dan Abramov' />
+      
+      <HStack w='1200px'><DrawerExample2 w='800px'/><DrawerExample3 w='400px'/></HStack>
+    
+      </VStack>  
+      </Center>
+
+      <Center>
+
       <Box w='1200px'>
       <BootstrapTable keyField='uuid' data={data} 
       columns={columns}
@@ -92,10 +82,6 @@ function App() {
 
   );
 }
-// https://store.native-instruments.com/media/catalog/product/
-// https://store.native-instruments.com/media/catalog/product/cache/93de93835928c4668a602c7b4a5731c7/r/o/rounds-shop_3_1_2.png
-// https://store.native-instruments.com/media/catalog/product/cache/93de93835928c4668a602c7b4a5731c7/n/o/nocturnal_state_shop_1_1_3.png
-// https://store.native-instruments.com/media/catalog/product/cache/93de93835928c4668a602c7b4a5731c7/p/d/pd_massive_sp_4_1_2.png
 
 function DrawerExample(props) {
   const { isOpen, onOpen, onClose } = useDisclosure() 
@@ -107,18 +93,17 @@ function DrawerExample(props) {
   },[]);
 
   const getSIMData=()=>{
-    axios('http://127.0.0.1:5000/similarity_search_uuid/'+ props.uuid).then(res=>{
-      console.log(res.data)
-      setSIMData(res.data)
-    })
-  };
 
-   const selectOptions = {
-    'Native Instruments': 'Native Instruments',
-    'Waves': 'Waves',
-    'Arturia': 'Arturia'
+    var str
+    if (props.hasOwnProperty('uuid'))
+    {
+      str = 'http://127.0.0.1:5000/similarity_search_uuid/'+ props.uuid
+      axios(str).then(res=>{
+        console.log(res.data)
+        setSIMData(res.data)
+      })
+    }
   };
-  
 
    const columns = [
     {text:"", formatter:matchFormatter , width:'40px'},
@@ -126,7 +111,7 @@ function DrawerExample(props) {
  
   {text:"Mode", formatter:modeFormatter , width:'300px'},
   {text:"Category", formatter:categoryFormatter },
-  {dataField:"bank1", text:"Product", formatter:tagFormatter, },
+  {dataField:"product", text:"Product", formatter:productFormatter, },
   {dataField:"vendor", text:"Vendor", formatter:tagFormatter, },
   {dataField:"preview", formatter:audioPlayerFormatter} ] 
 
@@ -153,28 +138,156 @@ function DrawerExample(props) {
   )
 }
 
-const RecommendedPresets = (props) => (
+function DrawerExample2() {
+  const { isOpen, onOpen, onClose } = useDisclosure() 
+  const btnRef = React.useRef()
 
-  props.ids.map( function (row) 
-  { 
-    console.log(row)
 
-    return <HStack>
-      {/* <Box>{x.name}({(100 - x.score * 100).toFixed(2)}%)</Box>*/}
-      <Flex h='40px'>
-        <Center axis='vertical'><Text as='b'>{row.name}</Text>
-         <Tag size='sm'>{row.category}</Tag><Tag size='sm'>{row.subcategory}</Tag>
-        </Center>
-      </Flex>
-      <Spacer />
-      <SimpleAudioPlayer 
-      w='100px'
-      src={"http://127.0.0.1:5000/previews/" + row.preview} 
-      controlsList='nodownload nomute novolume noplaybackrate'
-      controls/>
-    </HStack>
-    
-}))
+  const [inputValue, setInputValue] = useState([])
+  const [displayText, setDisplayText] = useState([]);
+
+  const handleOpenDrawer = () => {
+    setDisplayText(inputValue);
+    onOpen()
+  };
+
+  const [data_sim,setSIMData]=useState([])
+  useEffect(()=>{
+    if (displayText !== "")
+      {
+        var str = 'http://127.0.0.1:5000/similarity_search_text/'+ displayText
+        console.log(str)
+
+        axios(str).then(res=>{
+          console.log(res.data)
+          setSIMData(res.data)
+        })
+      } 
+  },[displayText]);
+
+   const columns = [
+    {text:"", formatter:matchFormatter , width:'40px'},
+    {dataField:"name",text:"Preset", formatter:itemFormatter,},
+ 
+  {text:"Mode", formatter:modeFormatter , width:'300px'},
+  {text:"Category", formatter:categoryFormatter },
+  {dataField:"product", text:"Product", formatter:productFormatter, },
+  {dataField:"vendor", text:"Vendor", formatter:tagFormatter, },
+  {dataField:"preview", formatter:audioPlayerFormatter} ] 
+
+  if (!data_sim) return "loading";
+
+  return (
+    <>
+      <InputGroup size='md' w='1200px'>
+        <Input
+          pr='4.5rem'
+          type='text'
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Type here to search for sounds..."
+          />
+      <InputRightElement width='4.5rem'>
+      
+      <IconButton icon={<FiSearch />} variant="text" ref={btnRef} onClick={handleOpenDrawer}/>
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose} finalFocusRef={btnRef} size="full">
+        <DrawerOverlay>
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>Similar Sounds</DrawerHeader>
+            <DrawerBody>
+                 <BootstrapTable keyField='uuid' data={data_sim} 
+                    columns={columns}
+                    bordered={ false }
+                    />
+            </DrawerBody>
+          </DrawerContent>
+        </DrawerOverlay>
+      </Drawer>
+
+      </InputRightElement>
+      </InputGroup>
+    </>
+  )
+}
+
+function DrawerExample3() {
+  const { isOpen, onOpen, onClose } = useDisclosure() 
+  const btnRef = React.useRef()
+
+  const [data_sim,setSIMData]=useState([])
+
+  function MyDropzone() {
+    const onDrop = useCallback(acceptedFiles => {
+      uploadFile(acceptedFiles[0])
+    }, [])
+    const {getRootProps, getInputProps, isDragActive} = useDropzone({onDrop})
+  
+    return (
+      <div {...getRootProps()}>
+        <input {...getInputProps()} />
+        {
+          isDragActive ?
+            <p>Drop the files here ...</p> :
+            <p>Drag 'n' drop some files here, or click to select files</p>
+        }
+      </div>
+    )
+  }
+
+  function uploadFile(file) 
+  {
+    var formData = new FormData();
+    formData.append("file", file);
+
+    axios.postForm('http://127.0.0.1:5000/search_by_sound', {
+      'myVar' : 'foo',
+      'file[]': [file]
+    }).then(res => {
+      setSIMData(res.data);
+      onOpen();
+      console.log('SUCCESS!!');
+    })
+    .catch(function () {
+      console.log('FAILURE!!');
+    });
+  }
+
+   const columns = [
+    {text:"", formatter:matchFormatter , width:'40px'},
+    {dataField:"name",text:"Preset", formatter:itemFormatter,},
+ 
+  {text:"Mode", formatter:modeFormatter , width:'300px'},
+  {text:"Category", formatter:categoryFormatter },
+  {dataField:"product", text:"Product", formatter:productFormatter, },
+  {dataField:"vendor", text:"Vendor", formatter:tagFormatter, },
+  {dataField:"preview", formatter:audioPlayerFormatter} ] 
+
+  if (!data_sim) return "loading";
+
+  return (
+    <>
+      <MyDropzone/>
+      
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose} finalFocusRef={btnRef} size="full">
+        <DrawerOverlay>
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>Similar Sounds</DrawerHeader>
+            <DrawerBody>
+                 <BootstrapTable keyField='uuid' data={data_sim} 
+                    columns={columns}
+                    bordered={ false }
+                    />
+            </DrawerBody>
+          </DrawerContent>
+        </DrawerOverlay>
+      </Drawer>
+
+    </>
+  )
+}
+
 
 class SimpleAudioPlayer extends Component {
   // Create state
@@ -220,7 +333,21 @@ function tagFormatter(cell, row, rowIndex) {
     console.log(row)
     return (
       <Flex h='40px'>
-      <Center axis='vertical'><Tag size='sm'>{cell}</Tag></Center>
+      <Center axis='vertical'>
+      { cell ?  <Tag m='2px' size='sm'>{cell}</Tag> : "" } 
+      </Center>
+      </Flex>
+    );
+  }
+
+  function productFormatter(cell, row, rowIndex) {
+    console.log(row)
+    return (
+      <Flex h='40px'>
+      <Center axis='vertical'>
+        <Image loading="eager" boxSize='35px' mr={3} fallbackSrc='https://via.placeholder.com/35' src={"http://127.0.0.1:5000/assets/"+row.upid} />
+      { cell ?  <Tag m='2px' size='sm'>{cell}</Tag> : "" } 
+      </Center>
       </Flex>
     );
   }
@@ -247,7 +374,10 @@ function tagFormatter(cell, row, rowIndex) {
     console.log(row)
     return (
       <Flex h='40px'>
-      <Center axis='vertical'><Tag m='2px' size='sm'>{row.category}</Tag><Tag m='2px' size='sm'>{row.subcategory}</Tag></Center>
+      <Center axis='vertical'>
+         { row.category ?  <Tag m='2px' size='sm'>{row.category}</Tag> : "" } 
+        {  row.subcategory ?  <Tag m='2px' size='sm'>{row.subcategory}</Tag> : "" }
+        </Center>
       </Flex>
     );
   }
@@ -256,26 +386,10 @@ function tagFormatter(cell, row, rowIndex) {
     return (
       <HStack>
         <DrawerExample uuid={row.uuid}/>
-        <SimpleAudioPlayer src={"http://127.0.0.1:5000/previews/" + cell} />
-{/*         <ReactAudioPlayer 
-          w='30px' h='20px'
-        src={"http://127.0.0.1:5000/previews/" + cell} 
-        controlsList='nodownload nomute novolume noplaybackrate' controls
-        /> */}
+        <SimpleAudioPlayer src={"http://127.0.0.1:5000/previews/" + cell} preload="none"/>
         </HStack>
     );
   }
-  function nameFormatter(cell, row, rowIndex) {
-
-    console.log(row)
-    console.log("Call")
-    console.log(rowIndex)
-
-    return (
-      <p>{` ${row.name}`} <DrawerExample uuid={row.uuid}/></p>
-    );
-  }
-
 
   function itemFormatter(cell, row, rowIndex) {
     return (
@@ -287,7 +401,7 @@ function tagFormatter(cell, row, rowIndex) {
 
   function matchFormatter(cell, row, rowIndex) {
 
-    const score = (1-row.score)*100;
+    const score = ((1-row.score)*100 +100)/2;
 
     return (
       <Flex h='40px'>
@@ -298,5 +412,9 @@ function tagFormatter(cell, row, rowIndex) {
       </Flex>
     );
   }
+
+ 
+
+
 
 export default App;
